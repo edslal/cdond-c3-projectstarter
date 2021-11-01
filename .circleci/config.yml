@@ -95,39 +95,39 @@ jobs:
           name: Back-end test
           command: |
             cd backend
-            npm i
+            npm install
             npm run build
       # - notify_slack_error
             
-  scan-frontend:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: [frontend-build]
-      - run:
-          name: Front-end scan
-          command: |
-            cd frontend
-            npm i
-            npm audit fix --audit-level=critical
-      # - notify_slack_error
+  # scan-frontend:
+  #   docker:
+  #     - image: circleci/node:13.8.0
+  #   steps:
+  #     - checkout
+  #     - restore_cache:
+  #         keys: [frontend-build]
+  #     - run:
+  #         name: Front-end scan
+  #         command: |
+  #           cd frontend
+  #           npm install
+  #           npm audit fix --audit-level=critical
+  #     # - notify_slack_error
 
-  scan-backend:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: [backend-build]
-      - run:
-          name: Back-end scan
-          command: |
-            cd backend
-            npm i
-            npm audit fix --audit-level=critical
-      # - notify_slack_error
+  # scan-backend:
+  #   docker:
+  #     - image: circleci/node:13.8.0
+  #   steps:
+  #     - checkout
+  #     - restore_cache:
+  #         keys: [backend-build]
+  #     - run:
+  #         name: Back-end scan
+  #         command: |
+  #           cd backend
+  #           npm i
+  #           npm audit fix --audit-level=critical
+  #     # - notify_slack_error
 
 #   deploy-infrastructure:
 #     docker:
@@ -300,10 +300,10 @@ workflows:
     jobs:
       - build-frontend
       - build-backend
-      # - test-frontend:
-      #     requires: [build-frontend]
-      # - test-backend:
-      #     requires: [build-backend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
       # - scan-backend:
       #     requires: [build-backend]
       # - scan-frontend:
