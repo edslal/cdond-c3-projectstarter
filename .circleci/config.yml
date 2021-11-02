@@ -83,7 +83,6 @@ jobs:
             cd frontend
             npm i
             npm run test
-      # - notify_slack_error
                 
   test-backend:
     docker:
@@ -98,37 +97,34 @@ jobs:
             cd backend
             npm install
             npm run build
-      # - notify_slack_error
             
-  # scan-frontend:
-  #   docker:
-  #     - image: circleci/node:13.8.0
-  #   steps:
-  #     - checkout
-  #     - restore_cache:
-  #         keys: [frontend-build]
-  #     - run:
-  #         name: Front-end scan
-  #         command: |
-  #           cd frontend
-  #           npm install
-  #           npm audit fix --audit-level=critical
-  #     # - notify_slack_error
+  scan-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Front-end scan
+          command: |
+            cd frontend
+            npm install
+            npm audit fix --audit-level=critical
 
-  # scan-backend:
-  #   docker:
-  #     - image: circleci/node:13.8.0
-  #   steps:
-  #     - checkout
-  #     - restore_cache:
-  #         keys: [backend-build]
-  #     - run:
-  #         name: Back-end scan
-  #         command: |
-  #           cd backend
-  #           npm i
-  #           npm audit fix --audit-level=critical
-  #     # - notify_slack_error
+  scan-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Back-end scan
+          command: |
+            cd backend
+            npm i
+            npm audit fix --audit-level=critical
 
 #   deploy-infrastructure:
 #     docker:
