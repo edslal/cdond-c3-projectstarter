@@ -3,6 +3,15 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.4.4
 
+commands:
+  notify_slack_error:
+    description: Canary for failure
+    steps:
+      - slack/notify:
+          event: fail
+          mentions: '@evslal'
+          template: basic_fail_1
+
 # extra comment
 # commands:
 #   destroy-environment:
