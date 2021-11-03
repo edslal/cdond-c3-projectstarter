@@ -24,8 +24,9 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws s3 rm s3://udapeople-kk1j287dhjppmz437ev --recursive
-            aws cloudformation delete-stack --stack-name InitialStack
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws cloudformation delete-stack --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
 
   # revert-migrations:
   #   description: Revert the last migration if successfully run in the current workflow.
@@ -142,20 +143,13 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            yum -y install tar
-            yum -y install gzip
-            echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID:0:7}"
-            echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID}"
-            echo "CIRCLE_BUILD_NUM: ${CIRCLE_BUILD_NUM}"
+      - run: yum -y install tar gzip
       - run:
           name: Ensure back-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags Application=udapeople \
+              --tags project=udapeople \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
@@ -163,17 +157,16 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags Application=udapeople \
+              --tags project=udapeople \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            aws ec2 describe-instances \
-              --filters Name=tag:Application,Values=udapeople \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            aws cloudformation list-exports \
+              --query "Exports[?Name==\'udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}\'].Value" \
+              --no-paginate \
               --output text >> .circleci/ansible/inventory.txt
-            cat .circleci/ansible/inventory.txt
       - persist_to_workspace:
           root: ~/
           paths:
