@@ -9,6 +9,11 @@
   apt:
     upgrade: yes
 
+- name: "Remove archival dependencies"
+  become: yes
+  apt:
+    autoremove: yes
+
 - name: "install dependencies."
   become: yes
   apt:

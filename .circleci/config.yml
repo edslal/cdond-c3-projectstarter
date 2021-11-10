@@ -160,33 +160,30 @@ jobs:
             - project/.circleci/ansible/inventory.txt
       - destroy-environment
 
-  # configure-infrastructure:
-  #   docker:
-  #     - image: python:3.7-alpine3.11
-  #   steps:
-  #     - checkout
-  #     - attach_workspace:
-  #         at: ~/
-  #     - add_ssh_keys:
-  #         fingerprints: ["9a:c6:d3:4f:44:a4:a6:b8:3e:2d:a4:5e:de:ec:32:9e"] # You can get this ID in the section where you registered the SSH Key  
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           # install the dependencies needed for your playbook
-  #           apk add --update ansible 
-  #           apk add --update tar 
-  #           apk add --update gzip
-  #           pip install awscli
-  #     - run:
-  #         name: Configure server
-  #         command: |
-  #           cd .circleci/ansible
-  #           ansible-playbook -i inventory.txt configure-server.yml
-  #     - run:
-  #         name: Install AWS CLI for rollback
-  #         when: on_fail
-  #         command: |
-  #           apk add --update py3-pip && pip3 install --upgrade pip && pip3 install awscli
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["3c:90:00:6d:9c:b6:8e:d5:0a:82:34:d9:0d:1e:a8:bc"] # You can get this ID in the section where you registered the SSH Key 
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            # install the dependencies needed for your playbook
+            apk add --update ansible
+            apk add --update tar
+            apk add --update gzip
+            pip install awscli
+            aws --version
+      - run:
+          name: Configure server
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment
 
 #   run-migrations:
 #     docker:
