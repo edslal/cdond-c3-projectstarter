@@ -239,22 +239,42 @@ jobs:
       - destroy-environment
       - revert-migrations    
                     
-#   deploy-backend:
-#     docker:
-#       # Docker image here that supports Ansible
-#     steps:
-#       # Checkout code from git here
-#       # Add ssh keys with fingerprint
-#       # attach workspace
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Deploy backend
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure  
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["3c:90:00:6d:9c:b6:8e:d5:0a:82:34:d9:0d:1e:a8:bc"]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk add --update tar
+            apk add --update gzip
+            apk add --update curl
+            apk add --update nodejs npm
+            apk add --update npm
+            pip install awscli
+      - run:
+          name: Deploy backend
+          command: |
+            cd backend
+            npm install
+            npm i
+            npm run build
+            cd ..
+            tar -C backend -czvf artifact.tar.gz .
+            mv artifact.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+            cd .circleci/ansible
+            echo "Contents of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
+      - destroy-environment
+      - revert-migrations
+      # Here's where you will add some code to rollback on failure  
 
 #   smoke-test:
 #     docker:
@@ -335,8 +355,8 @@ workflows:
           requires: [configure-infrastructure]
       - deploy-frontend:
           requires: [run-migrations]
-      # - deploy-backend:
-      #     requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       # - smoke-test:
       #     requires: [deploy-backend, deploy-frontend]
       # - cloudfront-update:
