@@ -1,8 +1,12 @@
 version: 2.1
 
 orbs:
-  slack: circleci/slack@4.4.4
   aws-cli: circleci/aws-cli@2.0.3
+
+parameters:
+  workflow_id:
+    type: string
+    default: "${CIRCLE_WORKFLOW_ID:0:7}"
 
 commands:
   destroy-environment:
@@ -24,11 +28,11 @@ commands:
           when: on_fail
           command: |
             SUCCESS=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})
-              if(( $SUCCESS==1 )); 
-              then
-                cd ~/project/backend
-                npm install
-                npm run migration:revert
+            if(( $SUCCESS==1 )); 
+            then
+              cd ~/project/backend
+              npm install
+              npm run migration:revert
             fi
             
 jobs:
@@ -45,9 +49,6 @@ jobs:
             cd frontend
             npm install
             npm run build
-      - save_cache:
-          paths: [frontend/node_modules]
-          key: frontend-build
 
   build-backend:
     docker:
@@ -62,9 +63,6 @@ jobs:
              cd backend
              npm install
              npm run build
-      - save_cache:
-          paths: [backend/node_modules]
-          key: backend-build
 
   test-frontend:
     docker:
@@ -77,7 +75,7 @@ jobs:
           name: Front-end test
           command: |
             cd frontend
-            npm i
+            npm install
             npm run test
                 
   test-backend:
@@ -122,6 +120,7 @@ jobs:
             cd backend
             npm install
             npm audit fix --audit-level=critical --force
+            npm audit fix --force
             npm audit fix --audit-level=critical
 
   deploy-infrastructure:
@@ -129,7 +128,7 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - run: yum -y install tar gzip
+      - run: yum install -y tar gzip
       - run:
           name: Ensure back-end infrastructure exists
           command: |
@@ -156,7 +155,6 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -170,7 +168,6 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            # install the dependencies needed for your playbook
             apk add --update ansible
             apk add --update tar
             apk add --update gzip
