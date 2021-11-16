@@ -207,27 +207,26 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: amazon/aws-cli
+      - image: circleci/node:13.8.0
     steps:
       - checkout
-      - run: yum install -y tar gzip
-      - run: yum install -y curl
-      - attach_workspace:
-          at: ~/
       - run:
           name: Install dependencies
           command: |
-            yum update -y
-            yum install -y python3
-            curl -sL https://rpm.nodesource.com/setup_14.x | bash -
-            yum install -y nodejs
-            pip3 install ansible
+            cd frontend
+            sudo npm install webpack-dev-server -g
+            sudo npm install
+      - aws-cli/setup
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress')
+            export BACKEND_IP=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}"\
+                "Name=instance-state-name,Values=running" \
+              --query 'Reservations[*].Instances[*].{Instance:PublicIpAddress}' --output text)
+            echo $BACKEND_IP
             export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
+            echo "API_URL = ${API_URL}"
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             cat frontend/.env
       - run:
@@ -238,6 +237,11 @@ jobs:
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      - run:
+          name: Install AWS CLI rollback
+          when: on_fail
+          command: |
+              apk add --update py3-pip && pip3 install --upgrade pip && pip3 install awscli
       - destroy-environment
       - revert-migrations    
                     
@@ -245,11 +249,6 @@ jobs:
     docker:
       - image: python:3.7-alpine3.11
     steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: ["3c:90:00:6d:9c:b6:8e:d5:0a:82:34:d9:0d:1e:a8:bc"]
-      - attach_workspace:
-          at: ~/
       - run:
           name: Install dependencies
           command: |
@@ -260,6 +259,12 @@ jobs:
             apk add --update nodejs npm
             apk add --update npm
             pip install awscli
+            aws --version
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["3c:90:00:6d:9c:b6:8e:d5:0a:82:34:d9:0d:1e:a8:bc"]
+      - attach_workspace:
+          at: ~/
       - run:
           name: Deploy backend
           command: |
